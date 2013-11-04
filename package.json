@@ -1,0 +1,37 @@
+{
+  "name": "mysql-ext",
+  "version": "0.0.1",
+  "description": "Extension to mysql module abstracting some common SQL queries",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node tests"
+  },
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "mysql": "~2.0.0-alpha9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shaoner/node-mysql-ext.git"
+  },
+  "keywords": [
+    "mysql",
+    "helper",
+    "mysql-ext",
+    "extension"
+  ],
+  "author": {
+    "name": "Alexandre Laurent",
+    "email": "shaoner@gmail.com",
+    "url": "http://www.spe4k.com/"
+  },
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/shaoner/node-mysql-ext/issues"
+  }
+}

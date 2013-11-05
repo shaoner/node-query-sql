@@ -7,7 +7,7 @@ Node.js Mysql extension to node-mysql
 
 ### Simple queries
 
-You have access to the following method through a client:
+You can use the following methods through a client instance:
 - count
 - select
 - selectW
@@ -18,8 +18,8 @@ You have access to the following method through a client:
 - query (alias to raw)
 
 
-If you add a 'p' prefix (pcount, pselect, pselectW, pinsert, premove, pupdate), a connection from the pool is requested and used.
-Else, you have to provide the connection yourself.
+Moreover, if you add a 'p' prefix (pcount, pselect, pselectW, pinsert, premove, pupdate), then you don't need to provide a connection.
+In this case, a connection is requested from a pool of connections during the query.
 
 ```javascript
 var MysqlExtClient = require('mysql-ext').Client;
@@ -39,8 +39,10 @@ var userObject = {
   enabled: true
 };
 
+// Single simple query that inserts the userObject into table users
 client.pinsert('users', userObject, function(err, res) { });
 
+// In this case, we can use the same connection for several queries
 client.pool.getConnection(function(err, connection) {
   if (err)
     throw err;
@@ -61,8 +63,8 @@ client.pool.getConnection(function(err, connection) {
 
 ### Multiple statements
 
-You can build simple multiple statements queries or transactions using the Query object.
-The Query object contains exactly the same functions as the client to build a query:
+You can do multiple queries at once or sql transactions using the Query object.
+The Query object contains exactly the same functions as the client, but this time it only prepare a query:
 - count
 - select
 - selectW
@@ -70,6 +72,11 @@ The Query object contains exactly the same functions as the client to build a qu
 - remove
 - update
 - raw
+
+All these methods actually return an object that contains:
+- The statement (containing '?' standing for each variable that will be replaced)
+- The statement's arguments in an Array
+- A boolean indicating if the query may affect some row(s) (typically with a side-effect statement it should be true)
 
 ```javascript
 var MysqlExtClient = require('mysql-ext').Client;
@@ -97,7 +104,9 @@ var user2 = {
   enabled: true
 };
 
-
+// This shortcut actually starts an SQL transaction by executing each query separately
+// If an error occurs or one of the statement supposed to affect some rows somehow does not
+// Then an error if set in the callback
 client.ptransaction([
   Query.insert('users', user1),
   Query.insert('users', user2),

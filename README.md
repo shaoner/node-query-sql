@@ -336,3 +336,10 @@ To create a new client, you need to pass it a config object see [node-mysql](htt
  * @param {Function} callback
  */
 ```
+
+## TODO
+
+- [ ] Unit tests
+- [ ] Create table wrapper
+- [ ] Create database wrapper (not sure this is pertinent)
+- [ ] ...

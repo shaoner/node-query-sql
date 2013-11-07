@@ -29,7 +29,11 @@ var client = new MysqlExtClient({
   port: 3306,
   user: 'root',
   password: '',
-  database: 'test'
+  database: 'test',
+  table: {
+  	USERS: 'users',
+	ETC: 'etc'
+  }
 });
 
 var userObject = {
@@ -40,17 +44,17 @@ var userObject = {
 };
 
 // Single simple query that inserts the userObject into table users
-client.pinsert('users', userObject, function(err, res) { });
+client.pinsert(client.table.USERS, userObject, function(err, res) { });
 
 // In this case, we can use the same connection for several queries
 client.pool.getConnection(function(err, connection) {
   if (err)
     throw err;
-  client.insert(connection, 'users', function(err, res) {
+  client.insert(connection, client.table.USERS, function(err, res) {
     if (err)
       throw err;
     if (res.affectedRows > 0) {
-      client.selectW('users', [ 'nickname', 'email_address' ], { id: 5 }, function(err, res) {
+      client.selectW(client.table.USERS, [ 'nickname', 'email_address' ], { id: 5 }, function(err, res) {
         if (err)
           throw err;
         console.log(res);
@@ -108,8 +112,8 @@ var user2 = {
 // If an error occurs or one of the statement supposed to affect some rows somehow does not
 // Then an error if set in the callback
 client.ptransaction([
-  Query.insert('users', user1),
-  Query.insert('users', user2),
+  Query.insert(client.table.USERS, user1),
+  Query.insert(client.table.USERS, user2),
   Query.raw('UPDATE otherTable SET uid = LAST_INSERT_ID() AND nickname = ?', [ user2.nickname ], true)
 ], function(err) {
   if (err)

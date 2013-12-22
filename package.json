@@ -1,6 +1,6 @@
 {
   "name": "mysql-ext",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Extension to mysql module abstracting some common SQL queries",
   "main": "index.js",
   "directories": {

@@ -1,4 +1,4 @@
-node-mysql-ext v0.0.2
+node-mysql-ext v0.0.3
 ==============
 
 Node.js Mysql extension to node-mysql

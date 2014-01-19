@@ -119,6 +119,13 @@ This builds a 'SELECT' statement and returns the new query.
 - `table`: the SQL table
 - `fields`: an array of fields
 
+#### Query.insert(table, fields)
+
+This builds an 'INSERT' statement and returns the new query.
+
+- `table`: the SQL table
+- `fields`: an object containing table field as keys and new values.
+
 #### Query.update(table, fields)
 
 This builds an 'UPDATE' statement and returns the new query.

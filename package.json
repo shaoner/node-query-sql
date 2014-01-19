@@ -1,7 +1,7 @@
 {
-  "name": "mysql-ext",
-  "version": "0.0.3",
-  "description": "Extension to mysql module abstracting some common SQL queries",
+  "name": "query-sql",
+  "version": "0.1.0",
+  "description": "Mysql query builder",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -13,25 +13,25 @@
     "node": "*"
   },
   "dependencies": {
-    "mysql": "~2.0.0-alpha9"
+    "mysql": "~2.0.1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/shaoner/node-mysql-ext.git"
+    "url": "https://github.com/shaoner/node-query-sql.git"
   },
   "keywords": [
     "mysql",
     "helper",
-    "mysql-ext",
-    "extension"
+    "query",
+    "builder"
   ],
   "author": {
     "name": "Alexandre Laurent",
     "email": "shaoner@gmail.com",
-    "url": "http://www.spe4k.com/"
+    "url": "http://www.elocat.com/"
   },
   "license": "BSD-2-Clause",
   "bugs": {
-    "url": "https://github.com/shaoner/node-mysql-ext/issues"
+    "url": "https://github.com/shaoner/node-query-sql/issues"
   }
 }

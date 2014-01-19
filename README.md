@@ -1,349 +1,199 @@
-node-mysql-ext v0.0.3
+node-query-sql v0.1.0
 ==============
 
-Node.js Mysql extension to node-mysql
+Node.js Mysql Query Builder to node-mysql
+
+## Installation
+
+`npm install query-sql`
+
+### Notes
+
+This module has been rebuilt to be an SQL abstraction instead of an SQL helper.
+It has to be used in addition of [node-mysql](https://github.com/felixge/node-mysql).
+Since this does not cover the entire SQL language yet, feel free to contribute.
 
 ## How to use it
 
-### Simple queries
+### Examples
 
-You can use the following methods through a client instance:
-- count
-- select
-- selectW
-- insert
-- remove
-- update
-- raw
-- query (alias to raw)
+You can use the following methods to build an SQL query in a Javascript way that fits with [node-mysql](https://github.com/felixge/node-mysql).
 
-
-Moreover, if you add a 'p' prefix (pcount, pselect, pselectW, pinsert, premove, pupdate), then you don't need to provide a connection.
-In this case, a connection is requested from a pool of connections during the query.
+#### Simple queries
 
 ```javascript
-var MysqlExtClient = require('mysql-ext').Client;
 
-var client = new MysqlExtClient({
-  host: '127.0.0.1',
-  port: 3306,
-  user: 'root',
-  password: '',
-  database: 'test',
-  table: {
-  	USERS: 'users',
-	ETC: 'etc'
-  }
-});
-
-var userObject = {
-  nickname: 'shaoner',
-  email_address: 'shaoner@gmail.com',
-  password: 'bisous',
-  enabled: true
-};
-
-// Single simple query that inserts the userObject into table users
-client.pinsert(client.table.USERS, userObject, function(err, res) { });
-
-// In this case, we can use the same connection for several queries
-client.pool.getConnection(function(err, connection) {
-  if (err)
-    throw err;
-  client.insert(connection, client.table.USERS, function(err, res) {
-    if (err)
-      throw err;
-    if (res.affectedRows > 0) {
-      client.selectW(client.table.USERS, [ 'nickname', 'email_address' ], { id: 5 }, function(err, res) {
-        if (err)
-          throw err;
-        console.log(res);
-      });
-    }
-  });
-});
+var q = Query.select([ 'a', 'b', 'c', 'd' ], 'table1').where({ id: 12 });
 
 ```
 
-### Multiple statements
+- q.statement contains `"SELECT a,b,c,d FROM ?? where id = ?"`
+- q.values contains `[ 'table1', 12 ]`
 
-You can do multiple queries at once or sql transactions using the Query object.
-The Query object contains exactly the same functions as the client, but this time it only prepare a query:
-- count
-- select
-- selectW
-- insert
-- remove
-- update
-- raw
+You can use `q.toString()` to get the final query string, or you can pass to the mysql query method both attributes (statement and values).
 
-All these methods actually return an object that contains:
-- The statement (containing '?' standing for each variable that will be replaced)
-- The statement's arguments in an Array
-- A boolean indicating if the query may affect some row(s) (typically with a side-effect statement it should be true)
+#### Combines queries
 
 ```javascript
-var MysqlExtClient = require('mysql-ext').Client;
-var Query = require('mysql-ext').Query;
 
-var client = new MysqlExtClient({
-  host: '127.0.0.1',
-  port: 3306,
-  user: 'root',
-  password: '',
-  database: 'test'
+var mysql      = require('mysql');
+var connection = mysql.createConnection(...);
+var Query = require('query-sql');
+
+var q = Query.select('id', 'table1').where({ x: 12 });
+
+var q2 = Query.update('table2', { nickname: 'newNick' }).whereIn('id', q);
+
+q2.exec(connection, function(err, res) {
+	console.log(err, res);
+	Query.delete('table2').where({ nickname: 'newNick'	}).exec(function(err, res) {
+		// ...
+	});
 });
 
-var user1 = {
-  nickname: 'shaoner',
-  email_address: 'shaoner@gmail.com',
-  password: 'bisous',
-  enabled: true
-};
+```
+This will execute:
+- UPDATE \`table2\` SET nickname = 'newNick' WHERE id IN (SELECT id FROM \`table1\` WHERE x = 12)
+- DELETE FROM \`table2\` WHERE nickname = 'newNick'
 
-var user2 = {
-  nickname: 'user2',
-  email_address: 'user2@mail.com',
-  password: 'mypassword',
-  enabled: true
-};
+#### Asynchronous multiple statements
 
-// This shortcut actually starts an SQL transaction by executing each query separately
-// If an error occurs or one of the statement supposed to affect some rows somehow does not
-// Then an error if set in the callback
-client.ptransaction([
-  Query.insert(client.table.USERS, user1),
-  Query.insert(client.table.USERS, user2),
-  Query.raw('UPDATE otherTable SET uid = LAST_INSERT_ID() AND nickname = ?', [ user2.nickname ], true)
-], function(err) {
-  if (err)
-    throw err;
-  console.log('everything seems fine');
+This could be done a better way, this is just for the example:
+
+```javascript
+
+var mysql      = require('mysql');
+var pool = mysql.createPool(...);
+var async = require('async');
+var Query = require('query-sql');
+
+db.getConnection(function(err, conn) {
+	async.waterfall([
+		function(cb) {
+			Query
+					.select([ 'id', 'email', 'photo' ], 'table_user')
+					.where({ email: 'hello@world.com' }).limit(1)
+					.exec(conn, function(err, res) {
+						cb(err, res);
+					});
+		},
+		function(res, cb) {
+			var user = res[0];
+			Query
+					.insert('table_bookmark', { id_user: user.id })
+					.exec(conn, function(err, res) {
+						cb(err, res, user);
+					});
+		},
+		function(res, user, cb) {
+			if (res.affectedRows != 0)
+			   	return cb(new Error('this bookmark already exists'), res);
+			Query
+					.update('table_user', { has_bookmark: true })
+					.where({ id: user.id })
+					.exec(function(err, res) {
+						cb(err, res);
+					});
+		}
+	], function(err, res) {
+		conn.release();
+	   	if (err) {
+		   // error treatment
+		   // ...
+		} else
+			console.log('OK!');
+
+	});
 });
+
 ```
 
 ## API
 
-### Query
+### Query builder method
 
-#### select
+#### Query.select(fields, table)
 
-```javascript
-/**
- * Select elements
- *
- * @param {string} table
- * @param {Array.string} fields
- * @returns {Object<string, (string|Array.string|boolean)>}
- */
-```
+This builds a 'SELECT' statement and returns the new query.
 
-#### selectW
+- `table`: the SQL table
+- `fields`: an array of fields
 
-```javascript
-/**
- * Select elements with a condition
- *
- * @param {string} table
- * @param {Array.string} fields
- * @param {Object<string, string>} where Build a key = element condition
- * @returns {Object<string, (string|Array.string|boolean)>}
- */
-```
+#### Query.update(table, fields)
 
-#### count
+This builds an 'UPDATE' statement and returns the new query.
 
-```javascript
-/**
- * Count elements
- *
- * @param {string} table
- * @param {Object<string, string>} where Build a key = element condition
- * @returns {Object<string, (string|Array.string|boolean)>}
- */
-```
+- `table`: the SQL table
+- `fields`: an object containing table field as keys and updated values.
 
-#### insert
+#### Query.count(table)
 
-```javascript
-/**
- * Insert object
- *
- * @param {string} table
- * @param {Object<string, ?>} values The object to insert
- * @returns {Object<string, (string|Array.string|boolean)>}
- */
-```
+This builds a 'SELECT COUNT(*)' statement and returns the new query.
 
-#### remove
+- `table`: the SQL table
 
-```javascript
-/**
- * Remove elements matching 'where' condition
- *
- * @param {string} table
- * @param {Object<string, string>} where Build a key = element condition
- * @returns {Object<string, (string|Array.string|boolean)>}
- */
-```
+#### Query.delete(table)
 
-#### update
+This builds a 'DELETE' statement and returns the new query.
 
-```javascript
-/**
- * Update a row
- *
- * @param {string} table
- * @param {Object<string, string>} values The values to update in the matched element
- * @param {Object<string, string>} where Build a key = element condition
- * @returns {Object<string, (string|Array.string|boolean)>}
- */
-```
+- `table`: the SQL table
 
-#### raw
+### Query clauses
 
-```javascript
-/**
- * Simple raw query
- *
- * @param {string} statement
- * @param {Array.<string>} args
- * @param {Boolean} affect Tell if this query should affect some rows
- * @returns {Object<string, (string|Array.string|boolean)>}
- */
-```
+#### whereIn(field, query)
 
+This appends a 'WHERE field IN' clause to this query
 
-### Client
+- `field`: the field to find
+- `query`: a string or a query to look in
 
-Each of these methods can alternatively be called with a 'p' prefix without providing the connection.
+#### where(condition)
 
-#### Create a new Client
+This appends a 'WHERE' clause to this query
 
-To create a new client, you need to pass it a config object see [node-mysql](https://github.com/felixge/node-mysql) for more details.
+- `condition`: a string or an object expressing a condition (with AND)
 
-#### select
+#### join(table, condition)
 
-```javascript
-/**
- * Select elements
- *
- * @param {mysql.Connection} connection
- * @param {string} table
- * @param {Array.string} fields
- * @param {Function} callback
- */
-```
+This appends a 'JOIN' clause to this query on `table`
 
-#### selectW
+- `table`: the SQL table to join
+- `condition`: the JOIN condition (string or object)
 
-```javascript
-/**
- * Select elements with a condition
- *
- * @param {mysql.Connection} connection
- * @param {string} table
- * @param {Array.string} fields
- * @param {Object<string, string>} where Build a key = element condition
- * @param {Function} callback
- */
-```
+#### orderby(field[, desc])
 
-#### count
+This appends an 'ORDER BY field' clause to this query.
 
-```javascript
-/**
- * Count elements
- *
- * @param {mysql.Connection} connection
- * @param {string} table
- * @param {Object<string, string>} where Build a key = element condition
- * @param {Function} callback
- */
-```
+- `field`: the sorting field
+- `desc`: a boolean to say if results should be sorted DESC (default ASC)
 
-#### insert
+#### limit([offset, ]lines)
 
-```javascript
-/**
- * Insert object
- *
- * @param {mysql.Connection} connection
- * @param {string} table
- * @param {Object<string, ?>} values The object to insert
- * @param {Function} callback
- */
-```
+This appends a 'LIMIT' clause to this query
 
-#### remove
+- `offset`: the starting offset
+- `lines`: the number of lines to limit
 
-```javascript
-/**
- * Remove elements matching 'where' condition
- *
- * @param {mysql.Connection} connection
- * @param {string} table
- * @param {Object<string, string>} where Build a key = element condition
- * @param {Function} callback
- */
-```
+#### append(statement, values)
 
-#### update
+This append a statement to this query
 
-```javascript
-/**
- * Update a row
- *
- * @param {mysql.Connection} connection
- * @param {string} table
- * @param {Object<string, string>} values The values to update in the matched element
- * @param {Object<string, string>} where Build a key = element condition
- * @param {Function} callback
- */
-```
+- `statement`: the statement to append
+- `values`: the array of values to append
 
-#### query or raw
+#### exec(connection[, cb])
 
-```javascript
-/**
- * Simple raw query
- *
- * @param {mysql.Connection} connection
- * @param {string} statement
- * @param {Array.<string>} args
- * @param {Boolean} affect Tell if this query should affect some rows
- * @param {Function} callback
- */
-```
+This execs this query
 
-#### multi
+- `connection`: a [node-mysql](https://github.com/felixge/node-mysql) connection
+- `cb`: the callback called by connection.query
 
-```javascript
-/**
- * Run multiple queries at once
- * To use it, you have to explicitly enable multipleStatements in the config
- * However this is not always recommanded
- *
- * @param {mysql.Connection} connection
- * @param {Array.Query} queries
- * @param {Function} callback
- */
-```
+#### toString()
 
-#### transaction
-```javascript
-/**
- * Starts a transaction
- *
- * @param {mysql.Connection} connection
- * @param {Array.Query} queries
- * @param {Function} callback
- */
-```
+This returns the final formatted query
 
 ## TODO
 
 - [ ] Unit tests
-- [ ] Create table wrapper
-- [ ] Create database wrapper (not sure this is pertinent)
+- [ ] Append query method
 - [ ] ...

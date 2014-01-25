@@ -160,12 +160,16 @@ This appends a 'WHERE' clause to this query
 
 - `condition`: a string or an object expressing a condition (with AND)
 
-#### join(table, condition)
+#### innerJoin(table, condition)
 
-This appends a 'JOIN' clause to this query on `table`
+This appends a 'INNER JOIN' clause to this query on `table`
 
 - `table`: the SQL table to join
 - `condition`: the JOIN condition (string or object)
+
+#### join(table, condition)
+
+This is an alias to innerJoin
 
 #### orderby(field[, desc])
 

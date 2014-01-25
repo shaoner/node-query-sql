@@ -171,6 +171,14 @@ This appends a 'INNER JOIN' clause to this query on `table`
 
 This is an alias to innerJoin
 
+#### outerJoin(table, condition[, right])
+
+This appends a 'OUTER JOIN' clause to this query on `table`
+
+- `table`: the SQL table to join
+- `condition`: the JOIN condition (string or object)
+- `right`: a boolean to say if the outer join if from the right
+
 #### orderby(field[, desc])
 
 This appends an 'ORDER BY field' clause to this query.

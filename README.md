@@ -3,6 +3,8 @@ node-query-sql v0.1.0
 
 Node.js Mysql Query Builder to node-mysql
 
+## /!\ This project his no longer maintained, use [knex](http://knexjs.org/) instead
+
 ## Installation
 
 `npm install query-sql`
